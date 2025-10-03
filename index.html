@@ -74,8 +74,9 @@
       font-size: 1.3rem;
       color: #d9534f;
       text-align: center;
-      min-height: 3em;
+      min-height: 4em;
       line-height: 1.3em;
+      white-space: pre-wrap;
     }
     .price-refresh {
       cursor: pointer;
@@ -85,7 +86,6 @@
       font-weight: normal;
       font-size: 0.9rem;
     }
-    /* Center container buttons */
     #homepage {
       display: flex;
       flex-direction: column;
@@ -131,8 +131,11 @@
     <label for="dailyPriceBuyIn">每日景輝金價 (HKD/兩):</label>
     <input type="tel" inputmode="decimal" pattern="[0-9]*[.,]?[0-9]*" id="dailyPriceBuyIn" />
 
-    <label for="weightBuyIn">重量 (毫兩):</label>
+    <label for="weightBuyIn">重量 (兩):</label>
     <input type="tel" inputmode="decimal" pattern="[0-9]*[.,]?[0-9]*" id="weightBuyIn" />
+
+    <label for="discountBuyIn">折扣 (%) (例如輸入94等於0.94倍):</label>
+    <input type="tel" inputmode="decimal" pattern="[0-9]*[.,]?[0-9]*" id="discountBuyIn" placeholder="預設為100表示無折扣" />
 
     <div class="checkbox-group">
       <label><input type="checkbox" id="commissionBuyIn" checked /> 扣除2%佣金（買入用）</label>
@@ -147,6 +150,9 @@
         <input type="tel" inputmode="decimal" pattern="[0-9]*[.,]?[0-9]*" id="customPurityBuyIn" min="0" max="1" step="0.01" disabled placeholder="0 ~ 1" />
       </label>
     </div>
+
+    <label for="counterofferBuyIn">客戶還價 (HKD):</label>
+    <input type="tel" inputmode="decimal" pattern="[0-9]*[.,]?[0-9]*" id="counterofferBuyIn" placeholder="輸入客戶還價計算利潤" />
 
     <button id="calcBuyIn">計算</button>
     <button id="resetBuyIn" style="background-color:#6c757d; margin-top: 5px;">重設</button>
@@ -168,7 +174,7 @@
     <label for="dailyPriceSellOut">每日景輝金價 (HKD/兩):</label>
     <input type="tel" inputmode="decimal" pattern="[0-9]*[.,]?[0-9]*" id="dailyPriceSellOut" />
 
-    <label for="weightSellOut">重量 (毫兩):</label>
+    <label for="weightSellOut">重量 (兩):</label>
     <input type="tel" inputmode="decimal" pattern="[0-9]*[.,]?[0-9]*" id="weightSellOut" />
 
     <div class="checkbox-group">
@@ -191,6 +197,9 @@
         <input type="tel" inputmode="decimal" pattern="[0-9]*[.,]?[0-9]*" id="customPuritySellOut" min="0" max="1" step="0.01" disabled placeholder="0 ~ 1" />
       </label>
     </div>
+
+    <label for="counterofferSellOut">客戶還價 (HKD):</label>
+    <input type="tel" inputmode="decimal" pattern="[0-9]*[.,]?[0-9]*" id="counterofferSellOut" placeholder="輸入客戶還價計算利潤" />
 
     <button id="calcSellOut">計算</button>
     <button id="resetSellOut" style="background-color:#6c757d; margin-top: 5px;">重設</button>
@@ -236,7 +245,7 @@
 
     const METALPRICE_API_KEY = 'b59eca630c98a8dbc001ff5d576db229';
     const USD_TO_HKD = 7.85;
-    const TROY_OUNCE_TO_TAEL_RATIO = 31.1035 / 37.429; // ≈ 0.83147 (tael per troy ounce)
+    const TROY_OUNCE_TO_TAEL_RATIO = 31.1035 / 37.429;
 
     async function fetchLiveGoldPrice() {
       const url = `https://api.metalpriceapi.com/v1/latest?api_key=${METALPRICE_API_KEY}&base=USD&currencies=XAU`;
@@ -247,13 +256,8 @@
 
         if (!data.success || !data.rates || !data.rates.XAU) throw new Error('資料錯誤');
 
-        // USD per troy ounce
         const USDPerOunce = 1 / data.rates.XAU;
-
-        // Convert USD per troy ounce to USD per tael (tael is heavier)
         const USDPerTael = USDPerOunce / TROY_OUNCE_TO_TAEL_RATIO;
-
-        // Convert USD per tael to HKD per tael
         const HKDPerTael = USDPerTael * USD_TO_HKD;
 
         liveGoldPriceHKD = HKDPerTael;
@@ -328,7 +332,9 @@
     document.getElementById('calcBuyIn').onclick = () => {
       const dailyPrice = parseFloat(document.getElementById('dailyPriceBuyIn').value);
       const weight = parseFloat(document.getElementById('weightBuyIn').value);
+      const discountInput = parseFloat(document.getElementById('discountBuyIn').value);
       const commission = document.getElementById('commissionBuyIn').checked;
+      const counterOfferInput = parseFloat(document.getElementById('counterofferBuyIn').value);
 
       if (isNaN(dailyPrice) || isNaN(weight) || weight <= 0 || dailyPrice <= 0) {
         alert('請輸入有效的每日金價和重量。');
@@ -346,7 +352,7 @@
         return;
       }
 
-      if(liveGoldPriceHKD === null) {
+      if (liveGoldPriceHKD === null) {
         alert('無法取得即時金價，無法計算利潤');
         return;
       }
@@ -357,27 +363,51 @@
 
       const livePriceWithPremium = liveGoldPriceHKD + premium;
 
+      // 基礎買入價格 = 每日金價 * 重量 * 純度
       let basePrice = dailyPrice * weight * purity;
+
+      // 折扣處理，若沒輸入或無效，視為100% (1.0倍)
+      let discount = 1.0;
+      if (!isNaN(discountInput) && discountInput > 0) {
+        discount = discountInput / 100.0;
+      }
+
+      basePrice *= discount;
+
       if (commission) basePrice *= 0.98;
 
+      // 利潤計算依客戶還價而異
       const marketPriceTotal = livePriceWithPremium * weight * purity;
-      const profitBuyIn = marketPriceTotal - basePrice;
 
-      document.getElementById('resultBuyIn').innerHTML = 
-        `買入價格（含佣金後）: HKD ${basePrice.toFixed(2)}<br>` +
-        `即時市場價格（含溢價）: HKD ${marketPriceTotal.toFixed(2)}<br>` +
+      let profitBuyIn = 0;
+      let displayOfferPrice = '';
+
+      if (!isNaN(counterOfferInput) && counterOfferInput > 0) {
+        // 客戶還價有輸入，用還價計算利潤，利潤 = 市場價格(含溢價) - 還價
+        profitBuyIn = marketPriceTotal - counterOfferInput;
+        displayOfferPrice = `\n客戶還價: HKD ${counterOfferInput.toFixed(2)}`;
+      } else {
+        // 用計算價格計算利潤
+        profitBuyIn = marketPriceTotal - basePrice;
+      }
+
+      document.getElementById('resultBuyIn').innerHTML =
+        `買入價格（含佣金及折扣）: HKD ${basePrice.toFixed(2)}<br>` +
+        `即時市場價格（含溢價）: HKD ${marketPriceTotal.toFixed(2)}${displayOfferPrice}<br>` +
         `<strong>買入利潤: HKD ${profitBuyIn.toFixed(2)}</strong>`;
     };
 
     document.getElementById('resetBuyIn').onclick = () => {
       document.getElementById('dailyPriceBuyIn').value = '';
       document.getElementById('weightBuyIn').value = '';
+      document.getElementById('discountBuyIn').value = '';
       document.getElementById('commissionBuyIn').checked = true;
       premium500.checked = true;
       premium1000.checked = false;
       purityRadiosBuyIn[0].checked = true;
       customPurityBuyIn.value = '';
       customPurityBuyIn.disabled = true;
+      document.getElementById('counterofferBuyIn').value = '';
       document.getElementById('resultBuyIn').textContent = '';
     };
 
@@ -387,6 +417,7 @@
       const commission = document.getElementById('commissionSellOut').checked;
       const labourCost = parseFloat(document.getElementById('labourCost').value) || 0;
       const creditCard = document.getElementById('creditCardFee').checked;
+      const counterOfferInput = parseFloat(document.getElementById('counterofferSellOut').value);
 
       if (isNaN(dailyPrice) || isNaN(weight) || weight <= 0 || dailyPrice <= 0) {
         alert('請輸入有效的每日金價和重量。');
@@ -404,7 +435,7 @@
         return;
       }
 
-      if(liveGoldPriceHKD === null) {
+      if (liveGoldPriceHKD === null) {
         alert('無法取得即時金價，無法計算利潤');
         return;
       }
@@ -415,11 +446,22 @@
       if (creditCard) basePrice *= 1.03;
 
       const marketPriceTotalSell = liveGoldPriceHKD * weight * purity;
-      const profitSellOut = basePrice - marketPriceTotalSell;
 
-      document.getElementById('resultSellOut').innerHTML = 
+      let profitSellOut = 0;
+      let displayOfferPrice = '';
+
+      if (!isNaN(counterOfferInput) && counterOfferInput > 0) {
+        // 利潤 = 還價 - 市場價格
+        profitSellOut = counterOfferInput - marketPriceTotalSell;
+        displayOfferPrice = `\n客戶還價: HKD ${counterOfferInput.toFixed(2)}`;
+      } else {
+        // 用計算價格計算利潤
+        profitSellOut = basePrice - marketPriceTotalSell;
+      }
+
+      document.getElementById('resultSellOut').innerHTML =
         `賣出價格（含佣金，人工費及手續費）: HKD ${basePrice.toFixed(2)}<br>` +
-        `即時市場價格: HKD ${marketPriceTotalSell.toFixed(2)}<br>` +
+        `即時市場價格: HKD ${marketPriceTotalSell.toFixed(2)}${displayOfferPrice}<br>` +
         `<strong>賣出利潤: HKD ${profitSellOut.toFixed(2)}</strong>`;
     };
 
@@ -432,6 +474,7 @@
       purityRadiosSellOut[0].checked = true;
       customPuritySellOut.value = '';
       customPuritySellOut.disabled = true;
+      document.getElementById('counterofferSellOut').value = '';
       document.getElementById('resultSellOut').textContent = '';
     };
 
