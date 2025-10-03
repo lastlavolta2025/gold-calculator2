@@ -236,12 +236,7 @@
 
     const METALPRICE_API_KEY = 'b59eca630c98a8dbc001ff5d576db229';
     const USD_TO_HKD = 7.85;
-    const TROY_OUNCE_TO_TAEL = 31.1035 / 37.429; // ≈0.83147 tael per troy ounce (Corrected)
-
-    // Explanation:
-    // 1 tael = 37.429 grams
-    // 1 troy ounce = 31.1035 grams
-    // So 1 troy ounce = 31.1035/37.429 ≈ 0.83147 tael
+    const TROY_OUNCE_TO_TAEL_RATIO = 31.1035 / 37.429; // ≈ 0.83147 (tael per troy ounce)
 
     async function fetchLiveGoldPrice() {
       const url = `https://api.metalpriceapi.com/v1/latest?api_key=${METALPRICE_API_KEY}&base=USD&currencies=XAU`;
@@ -252,11 +247,11 @@
 
         if (!data.success || !data.rates || !data.rates.XAU) throw new Error('資料錯誤');
 
-        // data.rates.XAU = USD per 1 XAU fraction, invert to get USD per 1 XAU (troy ounce)
+        // USD per troy ounce
         const USDPerOunce = 1 / data.rates.XAU;
 
-        // Convert USD per troy ounce to USD per tael
-        const USDPerTael = USDPerOunce * TROY_OUNCE_TO_TAEL;
+        // Convert USD per troy ounce to USD per tael (tael is heavier)
+        const USDPerTael = USDPerOunce / TROY_OUNCE_TO_TAEL_RATIO;
 
         // Convert USD per tael to HKD per tael
         const HKDPerTael = USDPerTael * USD_TO_HKD;
@@ -301,12 +296,11 @@
       fetchLivePrice('sellOut');
     };
 
-    // Ensure only one premium checked
     const premium500 = document.getElementById('premium500');
     const premium1000 = document.getElementById('premium1000');
     premium500.onclick = () => {
       if (premium500.checked) premium1000.checked = false;
-      else premium500.checked = true; // prevent uncheck both
+      else premium500.checked = true;
     };
     premium1000.onclick = () => {
       if (premium1000.checked) premium500.checked = false;
@@ -357,24 +351,16 @@
         return;
       }
 
-      // Determine checked premium for buy in
       let premium = 0;
       if (premium500.checked) premium = 500;
       else if (premium1000.checked) premium = 1000;
 
-      // Adjusted live gold price with premium added
       const livePriceWithPremium = liveGoldPriceHKD + premium;
 
-      // 基礎買入價格 = 每日金價 * 重量 * 純度
       let basePrice = dailyPrice * weight * purity;
-
-      // 扣除佣金2%
       if (commission) basePrice *= 0.98;
 
-      // 即時市場價格 = (即時金價+溢價) * 重量 * 純度
       const marketPriceTotal = livePriceWithPremium * weight * purity;
-
-      // 利潤 = 市場價格 - 買入價格
       const profitBuyIn = marketPriceTotal - basePrice;
 
       document.getElementById('resultBuyIn').innerHTML = 
@@ -424,17 +410,11 @@
       }
 
       let basePrice = dailyPrice * weight * purity;
-
       if (commission) basePrice *= 1.02;
-
       basePrice += labourCost;
-
       if (creditCard) basePrice *= 1.03;
 
-      // 即時市場價格
       const marketPriceTotalSell = liveGoldPriceHKD * weight * purity;
-
-      // 利潤 = 賣出價格 - 市場價格
       const profitSellOut = basePrice - marketPriceTotalSell;
 
       document.getElementById('resultSellOut').innerHTML = 
@@ -455,7 +435,6 @@
       document.getElementById('resultSellOut').textContent = '';
     };
 
-    // Fetch live price on page load
     fetchLivePrice('buyIn');
   </script>
 </body>
