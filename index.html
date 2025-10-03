@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Live Gold Price</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; }
+    #price { font-size: 2rem; color: goldenrod; margin-top: 20px; }
+  </style>
+</head>
+<body>
+  <h1>Live Gold Price (USD per Troy Ounce)</h1>
+  <div id="price">Loading...</div>
+
+  <script>
+    async function fetchGoldPrice() {
+      const apiKey = 'b59eca630c98a8dbc001ff5d576db229';
+      const url = `https://api.metalpriceapi.com/v1/latest?api_key=${apiKey}&base=USD&currencies=XAU`;
+
+      try {
+        const response = await fetch(url);
+        if (!response.ok) {
+          throw new Error('API request failed');
+        }
+        const data = await response.json();
+
+        if (data.success && data.rates && data.rates.XAU) {
+          // The API returns the rate as USD per XAU fraction - convert to price
+          // Based on the docs, the USD to XAU rate is fraction (e.g. 0.000538) so invert
+          const goldPrice = (1 / data.rates.XAU).toFixed(2);
+          document.getElementById('price').textContent = `$${goldPrice} USD`;
+        } else {
+          document.getElementById('price').textContent = 'Price data not available';
+        }
+      } catch (error) {
+        document.getElementById('price').textContent = 'Error fetching price';
+        console.error(error);
+      }
+    }
+
+    fetchGoldPrice();
+
+    // Optionally, refresh price every 1 minute
+    setInterval(fetchGoldPrice, 60000);
+  </script>
+</body>
+</html>
