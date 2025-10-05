@@ -123,16 +123,16 @@
         <span id="buyInRefresh" class="price-refresh">重新整理</span>
       </label>
       <div class="checkbox-group" style="margin-top: 6px;">
-        <label><input type="checkbox" id="premium500" checked /> 加HK$500 扣於即時金價</label>
-        <label><input type="checkbox" id="premium1000" /> 加HK$1000 扣於即時金價</label>
+        <label><input type="checkbox" id="premium500" checked /> 從即時金價扣HK$500</label>
+        <label><input type="checkbox" id="premium1000" /> 從即時金價扣HK$1000</label>
       </div>
     </div>
 
     <label for="dailyPriceBuyIn">每日景輝金價 (HKD/兩):</label>
     <input type="tel" inputmode="decimal" pattern="[0-9]*[.,]?[0-9]*" id="dailyPriceBuyIn" />
 
-    <label for="weightBuyIn">重量 (兩):</label>
-    <input type="tel" inputmode="decimal" pattern="[0-9]*[.,]?[0-9]*" id="weightBuyIn" />
+    <label for="weightBuyIn">重量 (毫兩):</label>
+    <input type="tel" inputmode="numeric" pattern="[0-9]*" id="weightBuyIn" placeholder="請輸入毫兩 (1000毫兩=1兩)" />
 
     <label for="discountBuyIn">折扣 (%) (例如輸入94等於0.94倍):</label>
     <input type="tel" inputmode="decimal" pattern="[0-9]*[.,]?[0-9]*" id="discountBuyIn" placeholder="預設為100表示無折扣" />
@@ -142,12 +142,12 @@
     </div>
 
     <div>
-      <label>金子純度:</label>
-      <label><input type="radio" name="purityBuyIn" value="1" checked /> 100%</label>
-      <label><input type="radio" name="purityBuyIn" value="0.75" /> 75%</label>
+      <label>金子純度 (%):</label>
+      <label><input type="radio" name="purityBuyIn" value="100" checked /> 100%</label>
+      <label><input type="radio" name="purityBuyIn" value="75" /> 75%</label>
       <label>
         <input type="radio" name="purityBuyIn" value="custom" /> 自訂純度:
-        <input type="tel" inputmode="decimal" pattern="[0-9]*[.,]?[0-9]*" id="customPurityBuyIn" min="0" max="1" step="0.01" disabled placeholder="0 ~ 1" />
+        <input type="tel" inputmode="numeric" pattern="[0-9]*" id="customPurityBuyIn" min="0" max="100" disabled placeholder="0 ~ 100" />
       </label>
     </div>
 
@@ -174,8 +174,8 @@
     <label for="dailyPriceSellOut">每日景輝金價 (HKD/兩):</label>
     <input type="tel" inputmode="decimal" pattern="[0-9]*[.,]?[0-9]*" id="dailyPriceSellOut" />
 
-    <label for="weightSellOut">重量 (兩):</label>
-    <input type="tel" inputmode="decimal" pattern="[0-9]*[.,]?[0-9]*" id="weightSellOut" />
+    <label for="weightSellOut">重量 (毫兩):</label>
+    <input type="tel" inputmode="numeric" pattern="[0-9]*" id="weightSellOut" placeholder="請輸入毫兩 (1000毫兩=1兩)" />
 
     <div class="checkbox-group">
       <label><input type="checkbox" id="commissionSellOut" checked /> 加2%佣金（賣出用）</label>
@@ -185,16 +185,16 @@
     <input type="tel" inputmode="decimal" pattern="[0-9]*[.,]?[0-9]*" id="labourCost" />
 
     <div class="checkbox-group">
-      <label><input type="checkbox" id="creditCardFee" /> 加3%信用卡手續費</label>
+      <label><input type="checkbox" id="creditCardFee" /> 信用卡付款（店鋪吸收3%手續費）</label>
     </div>
 
     <div>
-      <label>金子純度:</label>
-      <label><input type="radio" name="puritySellOut" value="1" checked /> 100%</label>
-      <label><input type="radio" name="puritySellOut" value="0.75" /> 75%</label>
+      <label>金子純度 (%):</label>
+      <label><input type="radio" name="puritySellOut" value="100" checked /> 100%</label>
+      <label><input type="radio" name="puritySellOut" value="75" /> 75%</label>
       <label>
         <input type="radio" name="puritySellOut" value="custom" /> 自訂純度:
-        <input type="tel" inputmode="decimal" pattern="[0-9]*[.,]?[0-9]*" id="customPuritySellOut" min="0" max="1" step="0.01" disabled placeholder="0 ~ 1" />
+        <input type="tel" inputmode="numeric" pattern="[0-9]*" id="customPuritySellOut" min="0" max="100" disabled placeholder="0 ~ 100" />
       </label>
     </div>
 
@@ -244,7 +244,7 @@
     let liveGoldPriceHKD = null;
 
     const METALPRICE_API_KEY = 'b59eca630c98a8dbc001ff5d576db229';
-    const USD_TO_HKD = 7.85;
+    const USD_TO_HKD = 7.78; // Updated exchange rate
     const TROY_OUNCE_TO_TAEL_RATIO = 31.1035 / 37.429;
 
     async function fetchLiveGoldPrice() {
@@ -331,24 +331,24 @@
 
     document.getElementById('calcBuyIn').onclick = () => {
       const dailyPrice = parseFloat(document.getElementById('dailyPriceBuyIn').value);
-      const weight = parseFloat(document.getElementById('weightBuyIn').value);
+      const weight_milliTael = parseFloat(document.getElementById('weightBuyIn').value);
       const discountInput = parseFloat(document.getElementById('discountBuyIn').value);
       const commission = document.getElementById('commissionBuyIn').checked;
       const counterOfferInput = parseFloat(document.getElementById('counterofferBuyIn').value);
 
-      if (isNaN(dailyPrice) || isNaN(weight) || weight <= 0 || dailyPrice <= 0) {
+      if (isNaN(dailyPrice) || isNaN(weight_milliTael) || weight_milliTael <= 0 || dailyPrice <= 0) {
         alert('請輸入有效的每日金價和重量。');
         return;
       }
 
-      let purity = 1;
+      let purityPercent = 100;
       purityRadiosBuyIn.forEach(radio => {
         if (radio.checked) {
-          purity = radio.value === 'custom' ? parseFloat(customPurityBuyIn.value) : parseFloat(radio.value);
+          purityPercent = radio.value === 'custom' ? parseFloat(customPurityBuyIn.value) : parseFloat(radio.value);
         }
       });
-      if (isNaN(purity) || purity <= 0 || purity > 1) {
-        alert('請輸入有效的純度（0到1之間）。');
+      if (isNaN(purityPercent) || purityPercent <= 0 || purityPercent > 100) {
+        alert('請輸入有效的純度（0到100之間）。');
         return;
       }
 
@@ -361,39 +361,33 @@
       if (premium500.checked) premium = 500;
       else if (premium1000.checked) premium = 1000;
 
-      const livePriceWithPremium = liveGoldPriceHKD + premium;
+      const livePriceWithPremium = liveGoldPriceHKD - premium; // Deduct premium for buy in
 
-      // 基礎買入價格 = 每日金價 * 重量 * 純度
-      let basePrice = dailyPrice * weight * purity;
+      let basePrice = dailyPrice * (weight_milliTael / 1000) * (purityPercent / 100); // Convert milli tael to tael
 
-      // 折扣處理，若沒輸入或無效，視為100% (1.0倍)
       let discount = 1.0;
       if (!isNaN(discountInput) && discountInput > 0) {
         discount = discountInput / 100.0;
       }
-
       basePrice *= discount;
 
       if (commission) basePrice *= 0.98;
 
-      // 利潤計算依客戶還價而異
-      const marketPriceTotal = livePriceWithPremium * weight * purity;
+      const marketPriceTotal = livePriceWithPremium * (weight_milliTael / 1000) * (purityPercent / 100);
 
       let profitBuyIn = 0;
       let displayOfferPrice = '';
 
       if (!isNaN(counterOfferInput) && counterOfferInput > 0) {
-        // 客戶還價有輸入，用還價計算利潤，利潤 = 市場價格(含溢價) - 還價
         profitBuyIn = marketPriceTotal - counterOfferInput;
         displayOfferPrice = `\n客戶還價: HKD ${counterOfferInput.toFixed(2)}`;
       } else {
-        // 用計算價格計算利潤
         profitBuyIn = marketPriceTotal - basePrice;
       }
 
       document.getElementById('resultBuyIn').innerHTML =
         `買入價格（含佣金及折扣）: HKD ${basePrice.toFixed(2)}<br>` +
-        `即時市場價格（含溢價）: HKD ${marketPriceTotal.toFixed(2)}${displayOfferPrice}<br>` +
+        `即時市場價格（扣除溢價）: HKD ${marketPriceTotal.toFixed(2)}${displayOfferPrice}<br>` +
         `<strong>買入利潤: HKD ${profitBuyIn.toFixed(2)}</strong>`;
     };
 
@@ -413,25 +407,25 @@
 
     document.getElementById('calcSellOut').onclick = () => {
       const dailyPrice = parseFloat(document.getElementById('dailyPriceSellOut').value);
-      const weight = parseFloat(document.getElementById('weightSellOut').value);
+      const weight_milliTael = parseFloat(document.getElementById('weightSellOut').value);
       const commission = document.getElementById('commissionSellOut').checked;
       const labourCost = parseFloat(document.getElementById('labourCost').value) || 0;
       const creditCard = document.getElementById('creditCardFee').checked;
       const counterOfferInput = parseFloat(document.getElementById('counterofferSellOut').value);
 
-      if (isNaN(dailyPrice) || isNaN(weight) || weight <= 0 || dailyPrice <= 0) {
+      if (isNaN(dailyPrice) || isNaN(weight_milliTael) || weight_milliTael <= 0 || dailyPrice <= 0) {
         alert('請輸入有效的每日金價和重量。');
         return;
       }
 
-      let purity = 1;
+      let purityPercent = 100;
       purityRadiosSellOut.forEach(radio => {
         if (radio.checked) {
-          purity = radio.value === 'custom' ? parseFloat(customPuritySellOut.value) : parseFloat(radio.value);
+          purityPercent = radio.value === 'custom' ? parseFloat(customPuritySellOut.value) : parseFloat(radio.value);
         }
       });
-      if (isNaN(purity) || purity <= 0 || purity > 1) {
-        alert('請輸入有效的純度（0到1之間）。');
+      if (isNaN(purityPercent) || purityPercent <= 0 || purityPercent > 100) {
+        alert('請輸入有效的純度（0到100之間）。');
         return;
       }
 
@@ -440,29 +434,34 @@
         return;
       }
 
-      let basePrice = dailyPrice * weight * purity;
-      if (commission) basePrice *= 1.02;
-      basePrice += labourCost;
-      if (creditCard) basePrice *= 1.03;
+      let basePrice = dailyPrice * (weight_milliTael / 1000) * (purityPercent / 100);
 
-      const marketPriceTotalSell = liveGoldPriceHKD * weight * purity;
+      if (commission) basePrice *= 1.02;
+
+      basePrice += labourCost;
+
+      const marketPriceTotalSell = liveGoldPriceHKD * (weight_milliTael / 1000) * (purityPercent / 100);
 
       let profitSellOut = 0;
       let displayOfferPrice = '';
 
       if (!isNaN(counterOfferInput) && counterOfferInput > 0) {
-        // 利潤 = 還價 - 市場價格
         profitSellOut = counterOfferInput - marketPriceTotalSell;
         displayOfferPrice = `\n客戶還價: HKD ${counterOfferInput.toFixed(2)}`;
       } else {
-        // 用計算價格計算利潤
         profitSellOut = basePrice - marketPriceTotalSell;
+      }
+
+      // Deduct 3% credit card fee cost from profit (absorbed by shop)
+      if (creditCard) {
+        const creditCardFee = basePrice * 0.03;
+        profitSellOut -= creditCardFee;
       }
 
       document.getElementById('resultSellOut').innerHTML =
         `賣出價格（含佣金，人工費及手續費）: HKD ${basePrice.toFixed(2)}<br>` +
         `即時市場價格: HKD ${marketPriceTotalSell.toFixed(2)}${displayOfferPrice}<br>` +
-        `<strong>賣出利潤: HKD ${profitSellOut.toFixed(2)}</strong>`;
+        `<strong>賣出利潤（含信用卡手續費成本）: HKD ${profitSellOut.toFixed(2)}</strong>`;
     };
 
     document.getElementById('resetSellOut').onclick = () => {
