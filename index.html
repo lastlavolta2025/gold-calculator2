@@ -22,18 +22,19 @@
       display: none;
     }
     button {
-      margin: 8px 5px;
-      padding: 12px 20px;
-      font-size: 1rem;
+      margin: 12px auto;
+      padding: 16px 30px;
+      font-size: 1.2rem;
       border: none;
-      border-radius: 6px;
+      border-radius: 8px;
       background-color: #0275d8;
       color: white;
       cursor: pointer;
-      box-shadow: 0 2px 5px rgb(2 117 216 / 0.6);
+      box-shadow: 0 3px 7px rgb(2 117 216 / 0.6);
       transition: background-color 0.3s ease;
-      width: 100%;
-      max-width: 250px;
+      display: block;
+      width: 80%;
+      max-width: 300px;
     }
     button:hover {
       background-color: #025aa5;
@@ -86,12 +87,9 @@
       font-weight: normal;
       font-size: 0.9rem;
     }
+    /* Center buttons container for homepage */
     #homepage {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 12px;
-      margin-top: 2em;
+      margin-top: 5em;
     }
     @media (max-width: 480px) {
       body {
@@ -99,8 +97,8 @@
         font-size: 14px;
       }
       button {
-        padding: 10px 15px;
-        font-size: 1rem;
+        padding: 12px 20px;
+        font-size: 1.1rem;
         max-width: 100%;
       }
     }
@@ -363,7 +361,8 @@
 
       const livePriceWithPremium = liveGoldPriceHKD - premium; // Deduct premium for buy in
 
-      let basePrice = dailyPrice * (weight_milliTael / 1000) * (purityPercent / 100); // Convert milli tael to tael
+      // Weight in taels = 毫兩 / 1000
+      let basePrice = dailyPrice * (weight_milliTael / 1000) * (purityPercent / 100);
 
       let discount = 1.0;
       if (!isNaN(discountInput) && discountInput > 0) {
@@ -434,6 +433,7 @@
         return;
       }
 
+      // Weight in taels = 毫兩 / 1000
       let basePrice = dailyPrice * (weight_milliTael / 1000) * (purityPercent / 100);
 
       if (commission) basePrice *= 1.02;
@@ -452,7 +452,7 @@
         profitSellOut = basePrice - marketPriceTotalSell;
       }
 
-      // Deduct 3% credit card fee cost from profit (absorbed by shop)
+      // 店鋪吸收信用卡手續費成本，從利潤扣除
       if (creditCard) {
         const creditCardFee = basePrice * 0.03;
         profitSellOut -= creditCardFee;
@@ -461,7 +461,7 @@
       document.getElementById('resultSellOut').innerHTML =
         `賣出價格（含佣金，人工費及手續費）: HKD ${basePrice.toFixed(2)}<br>` +
         `即時市場價格: HKD ${marketPriceTotalSell.toFixed(2)}${displayOfferPrice}<br>` +
-        `<strong>賣出利潤（含信用卡手續費成本）: HKD ${profitSellOut.toFixed(2)}</strong>`;
+        `<strong>賣出利潤（扣除信用卡手續費成本）: HKD ${profitSellOut.toFixed(2)}</strong>`;
     };
 
     document.getElementById('resetSellOut').onclick = () => {
@@ -477,6 +477,7 @@
       document.getElementById('resultSellOut').textContent = '';
     };
 
+    // 初始化載入即時金價
     fetchLivePrice('buyIn');
   </script>
 </body>
