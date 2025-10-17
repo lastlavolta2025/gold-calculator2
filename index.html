@@ -73,11 +73,18 @@
       margin-top: 18px;
       font-weight: 700;
       font-size: 1.3rem;
-      color: #d9534f;
+      /* color removed to allow inline colored text */
       text-align: center;
       min-height: 4em;
       line-height: 1.3em;
       white-space: pre-wrap;
+    }
+    #marginBuyIn {
+      margin-top: 8px;
+      font-weight: 700;
+      font-size: 1.1rem;
+      color: #555;
+      text-align: center;
     }
     .price-refresh {
       cursor: pointer;
@@ -121,7 +128,7 @@
         <span id="buyInRefresh" class="price-refresh">重新整理</span>
       </label>
       <div class="checkbox-group" style="margin-top: 6px;">
-        <label><input type="checkbox" id="premium500" checked /> 從即時金價扣HK$500</label>
+        <label><input type="checkbox" id="premium500" /> 從即時金價扣HK$500</label>
         <label><input type="checkbox" id="premium1000" /> 從即時金價扣HK$1000</label>
       </div>
     </div>
@@ -154,6 +161,7 @@
 
     <button id="calcBuyIn">計算</button>
     <button id="resetBuyIn" style="background-color:#6c757d; margin-top: 5px;">重設</button>
+    <div id="marginBuyIn"></div>
 
     <div class="result" id="resultBuyIn"></div>
     <button id="backFromBuyIn" style="background-color:#5bc0de; margin-top: 20px;">返回主頁</button>
@@ -302,11 +310,9 @@
     const premium1000 = document.getElementById('premium1000');
     premium500.onclick = () => {
       if (premium500.checked) premium1000.checked = false;
-      else premium500.checked = true;
     };
     premium1000.onclick = () => {
       if (premium1000.checked) premium500.checked = false;
-      else premium1000.checked = true;
     };
 
     const purityRadiosBuyIn = document.getElementsByName('purityBuyIn');
@@ -384,10 +390,19 @@
         profitBuyIn = marketPriceTotal - basePrice;
       }
 
+      let marginPercent = 0;
+      if (basePrice !== 0) {
+        marginPercent = (profitBuyIn / basePrice) * 100;
+      }
+      const marginElement = document.getElementById('marginBuyIn');
+      marginElement.textContent = `利潤率: ${marginPercent.toFixed(2)}%`;
+
+      const profitColor = profitBuyIn >= 0 ? 'green' : '#d9534f'; // green or red
+
       document.getElementById('resultBuyIn').innerHTML =
-        `買入價格（含佣金及折扣）: HKD ${basePrice.toFixed(2)}<br>` +
-        `即時市場價格（扣除溢價）: HKD ${marketPriceTotal.toFixed(2)}${displayOfferPrice}<br>` +
-        `<strong>買入利潤: HKD ${profitBuyIn.toFixed(2)}</strong>`;
+        `<div style="font-size:0.9rem; color:black;">買入價格（含佣金及折扣）: HKD ${Math.ceil(basePrice)}<br>` +
+        `即時市場價格（扣除溢價）: HKD ${Math.ceil(marketPriceTotal)}${displayOfferPrice}</div>` +
+        `<div style="font-size:1.2rem; font-weight:bold; color:${profitColor}; margin-top:6px;">買入利潤: HKD ${Math.ceil(profitBuyIn)}</div>`;
     };
 
     document.getElementById('resetBuyIn').onclick = () => {
@@ -395,13 +410,14 @@
       document.getElementById('weightBuyIn').value = '';
       document.getElementById('discountBuyIn').value = '';
       document.getElementById('commissionBuyIn').checked = true;
-      premium500.checked = true;
+      premium500.checked = false;
       premium1000.checked = false;
       purityRadiosBuyIn[0].checked = true;
       customPurityBuyIn.value = '';
       customPurityBuyIn.disabled = true;
       document.getElementById('counterofferBuyIn').value = '';
       document.getElementById('resultBuyIn').textContent = '';
+      document.getElementById('marginBuyIn').textContent = '';
     };
 
     document.getElementById('calcSellOut').onclick = () => {
@@ -458,10 +474,12 @@
         profitSellOut -= creditCardFee;
       }
 
+      const profitColorSell = profitSellOut >= 0 ? 'green' : '#d9534f'; // green or red
+
       document.getElementById('resultSellOut').innerHTML =
-        `賣出價格（含佣金，人工費及手續費）: HKD ${basePrice.toFixed(2)}<br>` +
-        `即時市場價格: HKD ${marketPriceTotalSell.toFixed(2)}${displayOfferPrice}<br>` +
-        `<strong>賣出利潤（扣除信用卡手續費成本）: HKD ${profitSellOut.toFixed(2)}</strong>`;
+        `<div style="font-size:0.9rem; color:black;">賣出價格（含佣金，人工費及手續費）: HKD ${Math.ceil(basePrice)}<br>` +
+        `即時市場價格: HKD ${Math.ceil(marketPriceTotalSell)}${displayOfferPrice}</div>` +
+        `<div style="font-size:1.2rem; font-weight:bold; color:${profitColorSell}; margin-top:6px;">賣出利潤（扣除信用卡手續費成本）: HKD ${Math.ceil(profitSellOut)}</div>`;
     };
 
     document.getElementById('resetSellOut').onclick = () => {
@@ -477,7 +495,7 @@
       document.getElementById('resultSellOut').textContent = '';
     };
 
-    // 初始化載入即時金價
+    // Initialize live price fetch on page load
     fetchLivePrice('buyIn');
   </script>
 </body>
