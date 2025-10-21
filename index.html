@@ -73,7 +73,6 @@
       margin-top: 18px;
       font-weight: 700;
       font-size: 1.3rem;
-      /* color removed to allow inline colored text */
       text-align: center;
       min-height: 4em;
       line-height: 1.3em;
@@ -94,7 +93,6 @@
       font-weight: normal;
       font-size: 0.9rem;
     }
-    /* Center buttons container for homepage */
     #homepage {
       margin-top: 5em;
     }
@@ -188,7 +186,7 @@
     </div>
 
     <label for="labourCost">人工費 (HKD):</label>
-    <input type="tel" inputmode="decimal" pattern="[0-9]*[.,]?[0-9]*" id="labourCost" />
+    <input type="tel" inputmode="decimal" pattern="-?[0-9]*[.,]?[0-9]*" id="labourCost" />
 
     <div class="checkbox-group">
       <label><input type="checkbox" id="creditCardFee" /> 信用卡付款（店鋪吸收3%手續費）</label>
@@ -250,7 +248,7 @@
     let liveGoldPriceHKD = null;
 
     const METALPRICE_API_KEY = 'b59eca630c98a8dbc001ff5d576db229';
-    const USD_TO_HKD = 7.78; // Updated exchange rate
+    const USD_TO_HKD = 7.78;
     const TROY_OUNCE_TO_TAEL_RATIO = 31.1035 / 37.429;
 
     async function fetchLiveGoldPrice() {
@@ -291,7 +289,7 @@
         if (context === 'buyIn') buyInLivePrice.textContent = '讀取中...';
         else if (context === 'sellOut') sellOutLivePrice.textContent = '讀取中...';
 
-        const price = await fetchLiveGoldPrice();
+        await fetchLiveGoldPrice();
         await updateLivePriceElements();
       }
     }
@@ -365,9 +363,8 @@
       if (premium500.checked) premium = 500;
       else if (premium1000.checked) premium = 1000;
 
-      const livePriceWithPremium = liveGoldPriceHKD - premium; // Deduct premium for buy in
+      const livePriceWithPremium = liveGoldPriceHKD - premium;
 
-      // Weight in taels = 毫兩 / 1000
       let basePrice = dailyPrice * (weight_milliTael / 1000) * (purityPercent / 100);
 
       let discount = 1.0;
@@ -394,11 +391,9 @@
       if (basePrice !== 0) {
         marginPercent = (profitBuyIn / basePrice) * 100;
       }
-      const marginElement = document.getElementById('marginBuyIn');
-      marginElement.textContent = `利潤率: ${marginPercent.toFixed(2)}%`;
+      document.getElementById('marginBuyIn').textContent = `利潤率: ${marginPercent.toFixed(2)}%`;
 
-      const profitColor = profitBuyIn >= 0 ? 'green' : '#d9534f'; // green or red
-
+      const profitColor = profitBuyIn >= 0 ? 'green' : '#d9534f';
       document.getElementById('resultBuyIn').innerHTML =
         `<div style="font-size:0.9rem; color:black;">買入價格（含佣金及折扣）: HKD ${Math.ceil(basePrice)}<br>` +
         `即時市場價格（扣除溢價）: HKD ${Math.ceil(marketPriceTotal)}${displayOfferPrice}</div>` +
@@ -449,7 +444,6 @@
         return;
       }
 
-      // Weight in taels = 毫兩 / 1000
       let basePrice = dailyPrice * (weight_milliTael / 1000) * (purityPercent / 100);
 
       if (commission) basePrice *= 1.02;
@@ -468,13 +462,12 @@
         profitSellOut = basePrice - marketPriceTotalSell;
       }
 
-      // 店鋪吸收信用卡手續費成本，從利潤扣除
       if (creditCard) {
         const creditCardFee = basePrice * 0.03;
         profitSellOut -= creditCardFee;
       }
 
-      const profitColorSell = profitSellOut >= 0 ? 'green' : '#d9534f'; // green or red
+      const profitColorSell = profitSellOut >= 0 ? 'green' : '#d9534f';
 
       document.getElementById('resultSellOut').innerHTML =
         `<div style="font-size:0.9rem; color:black;">賣出價格（含佣金，人工費及手續費）: HKD ${Math.ceil(basePrice)}<br>` +
@@ -495,7 +488,6 @@
       document.getElementById('resultSellOut').textContent = '';
     };
 
-    // Initialize live price fetch on page load
     fetchLivePrice('buyIn');
   </script>
 </body>
